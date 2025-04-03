@@ -6,8 +6,8 @@ genotype_season_split <- function(test_dataset,train_dataset, k) {
   for (j in 1:length(genokfolds)){
     testfolds[[j]] <- which(test_dataset$genotype%in%genotypes[genokfolds[[j]]])
     
-    valind <- which(train_dataset$genotype%in%genotypes[genokfolds[[j]]])
-    trainfolds[[j]] <- setdiff(seq(1,nrow(train_dataset)),valind)
+    testind <- which(train_dataset$genotype%in%genotypes[genokfolds[[j]]])
+    trainfolds[[j]] <- setdiff(seq(1,nrow(train_dataset)),testind)
   }
   return(list(trainfold=trainfolds,testfold=testfolds))
 }
