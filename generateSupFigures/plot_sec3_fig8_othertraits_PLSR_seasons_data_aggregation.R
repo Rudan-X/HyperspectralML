@@ -54,7 +54,6 @@ for (year in c(2021,2022,2023)){
             dfrmseper<-rbind(dfrmseper,data.frame(score=apply(res.rcv.mse$RMSEPper[[t]], 2, mean),trait=inVar,data_split=dataset[t],Model="PLSR",datatype=datalabel[d], Season=year))
             dfnoc<-rbind(dfnoc,data.frame(NoC=apply(res.rcv.mse$bestnoc, 2, mean),trait=inVar,data_split=dataset[t],Model="PLSR",datatype=datalabel[d], Season=year))
           }
-          
         }
       }
     }

@@ -40,7 +40,7 @@ for (d in 1:length(datatype)){#
     
     load(paste0("results/comparePLSR_SVR/tuned_SVR_model_",datatype[d],"_",agg,year,"_o", segments0*nrep,"_",inVar,".RData"))
     res.rcv.svr.tuned <- res.rcv.svr
-    load(paste0("results/comparePLSR_SVR/tuned_SVR_model_",datatype[d],"_",agg,year,"_o", segments0*nrep,"_",inVar,".RData"))
+    load(paste0("results/comparePLSR_SVR/SVR_model_",datatype[d],"_",agg,year,"_o", segments0*nrep,"_",inVar,".RData"))
     
     for (t in 1:2){
       if (ini){

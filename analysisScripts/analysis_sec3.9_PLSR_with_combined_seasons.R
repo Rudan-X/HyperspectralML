@@ -113,8 +113,8 @@ for (y in 1:3){
       }
       
       res.rcv.mse$folds <- folds
-      save(res.rcv.mse, file=paste0("results/compare_season/PLSR_repeatedCV_model_",datatype,"_allyears_o", segments0*nrep,"i",segment*repl,"_",inVar,".RData"))
-      # save(res.rcv.mse, file=paste0("results/compare_season/PLSR_repeatedCV_model_",datatype,"_",agg,year1[y],"and",year2[y],"_o", segments0*nrep,"i",segment*repl,"_",inVar,".RData"))
+      # save(res.rcv.mse, file=paste0("results/compare_season/PLSR_repeatedCV_model_",datatype,"_allyears_o", segments0*nrep,"i",segment*repl,"_",inVar,".RData"))
+      save(res.rcv.mse, file=paste0("results/compare_season/PLSR_repeatedCV_model_",datatype,"_",agg,year1[y],"and",year2[y],"_o", segments0*nrep,"i",segment*repl,"_",inVar,".RData"))
     }
   }
 }
