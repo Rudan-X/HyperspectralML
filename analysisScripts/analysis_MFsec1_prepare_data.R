@@ -1,5 +1,5 @@
 setwd("C:/Users/Rudan/Documents/GitHub/HyperspectralML")
-files=c("SLA","ACi","fluorescence","lightSaturatedGasExchange","CN_isotopes")
+files=c("SLA","ACi","fluorescence","CN_isotopes")
 for (year in c(2021,2022,2023)){ #
   
   # load reference data
