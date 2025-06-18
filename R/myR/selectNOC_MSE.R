@@ -7,18 +7,22 @@
 selectNOC_MSE <- function(MSEP, select_strat="hastie",sdfact=1, repl=30,segments=3) {
   optcomp <- matrix(NA, nrow = 1, ncol = repl)
   for (i in 1:repl){
-    MSEPm <- apply(MSEP[((i-1)*3+1):(i*3),], 2, mean)
-    MSEPsd <- apply(MSEP[((i-1)*3+1):(i*3),], 2, sd)/sqrt(segments)
+    MSEPm <- apply(MSEP[((i-1)*segments+1):(i*segments),], 2, mean)
+    MSEPsd <- apply(MSEP[((i-1)*segments+1):(i*segments),], 2, sd)/sqrt(segments)
     if (select_strat == "diffnext") {
-      fvec <- (diff(MSEPm) + sdfact * MSEPsd[-1]) < 
-        0
+      fvec <- (diff(MSEPm) + sdfact * MSEPsd[-1]) < 0
       fvec <- c(TRUE, fvec)
       ind <- which.min(MSEPm)
       optcomp[,i] <- max((1:ind)[fvec[1:ind]])
     }else if (select_strat == "hastie") {
       ind <- which.min(MSEPm)
       fvec <- (MSEPm < (MSEPm[ind] + sdfact * MSEPsd[ind]))
-      optcomp[,i] <- min((1:ind)[fvec[1:ind]])
+      final_ind <- min((1:ind)[fvec[1:ind]])
+      if (final_ind==Inf){
+        optcomp[,i] <- ind
+      }else{
+        optcomp[,i] <- final_ind
+      }
     }else if (select_strat == "relchange") {
       ind <- which.min(MSEPm)
       MSEPsel <- MSEPm[1:ind]

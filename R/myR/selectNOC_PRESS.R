@@ -46,24 +46,30 @@ selectNOC_PRESS <- function(PRESS, method="firstMin", maxComps=20) {
       #print(i)
       results[i] <- round(unlist(ttest$p.value),8)
     }
-    results <- data.frame(seq(1,lowest_PRESS-1,1),results)
-    names(results) <- c("Component", "P.value")
-    first <- min(which(as.numeric(as.character(results$P.value)) > 0.05))
-    if (is.infinite(first)){
-      first<-lowest_PRESS-1
+    if (lowest_PRESS<=1){
+      nComps <- 1
+      bp <- c()
+    }else{
+      results <- data.frame(seq(1,lowest_PRESS-1,1),results)
+      names(results) <- c("Component", "P.value")
+      first <- min(which(as.numeric(as.character(results$P.value)) > 0.05))
+      if (is.infinite(first)){
+        first<-lowest_PRESS-1
+      }
+      nComps <- results$Component[first]
+      print(paste0("*** Optimal number of components based on t.test: ", nComps))
+      bp <- ggplot(pressDFres, aes(x=variable, y=value)) + theme_bw() + 
+        geom_boxplot(notch=FALSE) + labs(x="Number of Components", y="PRESS") + 
+        stat_boxplot(geom = "errorbar", width = 0.2) +
+        geom_vline(xintercept = nComps, linetype="dashed", 
+                   color = "blue", size=1.0)
+      theme(axis.text=element_text(size=18), legend.position="none",
+            axis.title=element_text(size=20, face="bold"), 
+            axis.text.x = element_text(angle = 0,vjust = 0.5),
+            panel.border = element_rect(linetype = "solid", fill = NA, size=1.5))
+      print(bp)
     }
-    nComps <- results$Component[first]
-    print(paste0("*** Optimal number of components based on t.test: ", nComps))
-    bp <- ggplot(pressDFres, aes(x=variable, y=value)) + theme_bw() + 
-      geom_boxplot(notch=FALSE) + labs(x="Number of Components", y="PRESS") + 
-      stat_boxplot(geom = "errorbar", width = 0.2) +
-      geom_vline(xintercept = nComps, linetype="dashed", 
-                 color = "blue", size=1.0)
-    theme(axis.text=element_text(size=18), legend.position="none",
-          axis.title=element_text(size=20, face="bold"), 
-          axis.text.x = element_text(angle = 0,vjust = 0.5),
-          panel.border = element_rect(linetype = "solid", fill = NA, size=1.5))
-    print(bp)
+    
   }
   return(list(bestnoc=nComps,dfpress=pressDFres,plot=bp))
 }

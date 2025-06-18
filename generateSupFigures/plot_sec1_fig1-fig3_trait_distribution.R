@@ -12,11 +12,11 @@ for (file in c("R_Burnett/","myR/")){
   invisible(sapply(myls,FUN=source))
 }
 
-vars <- c("SLA", "N", "C", "CN", "d15N", "d13C", "Vmax", "Vpmax", "Vpmax.Vmax",
-          "iWUE", "gsw","a400", "SL", "initialFvFm", "endFvFm", "endNPQ",  
-          "maxNPQ","NPQ_ind_linear", "NPQ_rel_res", "NPQ_rel_rate", "NPQ_rel_amp",
-          "NPQ_ind_rate", "NPQ_ind_amp", "phiPSII_ind_res", "phiPSII_ind_rate",
-          "phiPSII_ind_amp" )
+
+vars<-c( "SLA","C","N", "CN", "d13C", "d15N",  "Vpmax","Vmax", "a400", "gsw",  "iWUE", "SL",
+         "NPQ_ind_amp","NPQ_ind_rate", "NPQ_ind_linear", "NPQ_rel_amp", "NPQ_rel_rate", "NPQ_rel_res","maxNPQ",  "endNPQ", 
+         "phiPSII_ind_amp", "phiPSII_ind_rate", "phiPSII_ind_res", "endFvFm", "initialFvFm")
+
 
 datalabel <- c("Raw data","Averaged by plot","Averaged by genotype") #
 datatypes <- c("raw_data", "plot_averaged", "genotype_averaged")
@@ -34,6 +34,32 @@ for (d in 1:length(datatypes)){
       if (inVar %in% colnames(traits)){
         y <- traits[!is.na(traits[,inVar]),inVar]
         
+        if (inVar=="d13C" & datatype=="plot_averaged"){
+          y <- y[y>(-30)]
+        }else if (inVar=="d13C" & datatype=="genotype_averaged"){
+          y <- y[y>(-20)]
+        }
+        
+        if (inVar=="Vmax" & datatype=="raw_data"){
+          y <- y[y<75]
+        }
+        
+        if (inVar=="C"){
+          y <- y[y<60]
+        }
+        
+        if (inVar=="endNPQ"){
+          y <- y[y<0.5]
+        }
+        
+        if (inVar=="NPQ_rel_res"){
+          y <- y[y<0.5]
+        }
+        
+        if (inVar=="NPQ_ind_rate"){
+          y <- y[y<0.04]
+        }
+        
         if (ini){
           df <- data.frame(values=y,Trait=inVar,Season=year,datatype=datalabel[d])
           ini <- FALSE
@@ -47,8 +73,8 @@ for (d in 1:length(datatypes)){
 
 df$Trait_type <- varclass[match(df$Trait,var1)]
 df$Trait_type <- factor(df$Trait_type,levels=c("Structural & biochemical","Gas exchange","Chlorophyll fluorescence"))
-df$Trait <- var2[match(df$Trait,var1)] # var1 and var2loaded by  myR/change_var_names.R
-df$Trait <- factor(df$Trait, levels=var2[match(vars,var1)])
+df$Trait <- short_var2[match(df$Trait,var1)] # var1 and short_var2loaded by  myR/change_var_names.R
+df$Trait <- factor(df$Trait, levels=short_var2[match(vars,var1)])
 df$datatype <- factor(df$datatype,levels=datalabel)
 
 
@@ -61,7 +87,7 @@ ggplot(df[df$Trait_type=="Structural & biochemical",], aes(x=Trait, y=values,fil
       text = element_text(size = 14,face="bold"),axis.text =  element_text(size = 10,face="bold"),axis.text.x  = element_blank(),
       axis.title=element_text(size=13,face="bold"), strip.text = element_text(size=13,face="bold"))
 
-ggsave("Figures/SF_sec1.1_trait_distribution_structural.png",width = 6, height = 9)
+ggsave("Figures/SF_sec1.1_trait_distribution_structural.png",width = 6, height = 8)
 
 
 ggplot(df[df$Trait_type=="Gas exchange",], aes(x=Trait, y=values,fill=datatype)) +
@@ -73,7 +99,7 @@ ggplot(df[df$Trait_type=="Gas exchange",], aes(x=Trait, y=values,fill=datatype))
         text = element_text(size = 14,face="bold"),axis.text =  element_text(size = 10,face="bold"),axis.text.x  = element_blank(),
         axis.title=element_text(size=13,face="bold"), strip.text = element_text(size=11,face="bold"))
 
-ggsave("Figures/SF_sec1.2_trait_distribution_gasexchange.png",width = 6, height = 9)
+ggsave("Figures/SF_sec1.2_trait_distribution_gasexchange.png",width = 6, height = 8)
 
 ggplot(df[df$Trait_type=="Chlorophyll fluorescence",], aes(x=Trait, y=values,fill=datatype)) +
   geom_violin()+

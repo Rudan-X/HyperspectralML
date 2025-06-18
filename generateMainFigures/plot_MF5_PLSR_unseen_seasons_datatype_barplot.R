@@ -21,80 +21,110 @@ get_R2 <- function(meas,pred){
   return(R2)
 }
 
+vars<-c( "SLA","N", "CN", "d13C",  "Vpmax","Vmax", "a400", "gsw",  
+         "NPQ_ind_amp", "NPQ_rel_amp", "NPQ_rel_rate","maxNPQ", 
+         "phiPSII_ind_amp", "phiPSII_ind_rate", "phiPSII_ind_res", "endFvFm", "initialFvFm")
+
+dts <- c("raw_data","plot_averaged","genotype_averaged")
+dtsi<-c( rep(3,3), 2,rep(1,4), rep(1,6),rep(2,3))
+# MLs <- c(rep("PLSR",3),rep("SVR",5),rep("PLSR",9))
+MLs <- c("SVR",rep("PLSR",2),rep("SVR",5),rep("PLSR",9))
+dtlabels <- c("Raw data","Plot averaged","Genotype averaged")
+agg <- "sampledHSR"
+
 segments0 <- 1
 nrep <- 1
 
 repl<-10
 segment<-3
 
-agg <- "sampledHSR"
-
-datalabel <- c("Raw data","Averaged by replicate","Averaged by genotype") #
-datatypes <- c("raw_data","plot_averaged","genotype_averaged")
-vars<-c("SLA","N","Vmax","a400","phiPSII_ind_res","initialFvFm") #"SLA","Vmax","a400","phiPSII_ind_res","maxNPQ"
 year1 <- c(2022,2023,2021,2023,2021,2022)
 year2 <- c(2021,2021,2022,2022,2023,2023)
 ini <- TRUE
 for (y in 1:6){
-  for (d in 1:3){ 
-    datatype <- datatypes[d]
-    for (inVar in vars){
-
-      filen <- paste0("results/unseen_seasons/PLSR_model_",datatype,"_",agg,"_training",year1[y],"_testing",year2[y],"_i",segment*repl,"_",inVar,".RData")
-      if (file.exists(filen)){
-        load(filen)
-        
-        if (ini){
-          dfcor <- data.frame(score=cor(res.rcv.mse$pred[val.ind],res.rcv.mse$meas[val.ind])^2,Trait=inVar,Training=year1[y],Testing=year2[y],datatype=datalabel[d])
-          ini <- FALSE
-        }else{
-          dfcor <- rbind(dfcor,data.frame(score=cor(res.rcv.mse$pred[val.ind],res.rcv.mse$meas[val.ind])^2,Trait=inVar,Training=year1[y],Testing=year2[y],datatype=datalabel[d]))
-        }
-      }
+  for (i in 1:length(vars)){
+    inVar <- vars[i]
+    datatype <- dts[dtsi[i]]
+    if (MLs[i]=="PLSR"){
+      filename <- paste0("results/unseen_seasons_specific/PLSR_model_",datatype,"_",agg,"_training",year1[y],"_testing",year2[y],"_i",segment*repl,"_",inVar,".RData")
+    }else if (MLs[i]=="SVR"){
+      filename <- paste0("results/unseen_seasons_specific/SVR_model_",datatype,"_",agg,"_training",year1[y],"_testing",year2[y],"_i",segment*repl,"_",inVar,".RData")
+    }
+    load(filename)
+    val.ind <- res$val.ind
+    if (ini){
+      dfcor <- data.frame(score=cor(res$pred[val.ind],res$meas[val.ind])^2,Trait=inVar,Training=paste0("Train ", year1[y]),Testing=paste0("Test ", year2[y]),Aggregation=paste0(dtlabels[dtsi[i]]," & ", MLs[i]))
+      ini <- FALSE
+    }else{
+      dfcor <- rbind(dfcor,data.frame(score=cor(res$pred[val.ind],res$meas[val.ind])^2,Trait=inVar,Training=paste0("Train ", year1[y]),Testing=paste0("Test ", year2[y]),Aggregation=paste0(dtlabels[dtsi[i]]," & ", MLs[i])))
     }
   }
 }
-vars<-c("SLA","N","Vmax","a400","phiPSII_ind_res","initialFvFm") 
+
 year1 <- list()
 year1[[1]] <- c(2022,2023)
 year1[[2]] <- c(2021,2023)
 year1[[3]] <- c(2021,2022)
 
 year2 <- c(2021,2022,2023)
+
 for (y in 1:3){
-  for (d in 1:3){ 
-    datatype <- datatypes[d] 
-    for (inVar in vars){
-      filen <- paste0("results/unseen_seasons/PLSR_model_",datatype,"_",agg,"_training",year1[[y]][1],"&",year1[[y]][2],"_testing",year2[y],"_i",segment*repl,"_",inVar,".RData")
-      if (file.exists(filen)){
-        load(filen)
-        
-        dfcor <- rbind(dfcor,data.frame(score=cor(res.rcv.mse$pred[val.ind],res.rcv.mse$meas[val.ind])^2,Trait=inVar,Training="Combined",Testing=year2[y],datatype=datalabel[d]))
-      }
+  for (i in 1:length(vars)){
+    inVar <- vars[i]
+    datatype <- dts[dtsi[i]]
+    if (MLs[i]=="PLSR"){
+      filename <- paste0("results/unseen_seasons_specific/PLSR_model_",datatype,"_",agg,"_training",year1[[y]][1],"&",year1[[y]][2],"_testing",year2[y],"_i",segment*repl,"_",inVar,".RData")
+    }else if (MLs[i]=="SVR") {
+      filename <- paste0("results/unseen_seasons_specific/SVR_model_",datatype,"_",agg,"_training",year1[[y]][1],"&",year1[[y]][2],"_testing",year2[y],"_i",segment*repl,"_",inVar,".RData")
     }
+
+    load(filename)
+    val.ind <- res$val.ind
+    dfcor <- rbind(dfcor,data.frame(score=cor(res$pred[val.ind],res$meas[val.ind])^2,Trait=inVar,Training="Combined seasons",Testing=paste0("Test ", year2[y]),Aggregation=paste0(dtlabels[dtsi[i]]," & ", MLs[i])))
   }
 }
 
-dfcor$Trait <- var2[match(dfcor$Trait,var1)] # var1 and var2loaded by  myR/change_var_names.R
-dfcor$Trait <- factor(dfcor$Trait, levels=var2[match(vars,var1)])
-dfcor$Training <- factor(dfcor$Training,levels=c("2021","2022","2023","Combined"))
-dfcor$Testing <- factor(dfcor$Testing,levels=unique(dfcor$Testing)) 
-dfcor$datatype <- factor(dfcor$datatype,levels=datalabel)
+dfcor$Trait <- var2_flat[match(dfcor$Trait,var1)] # var1 and var2loaded by  myR/change_var_names.R
+dfcor$Trait <- factor(dfcor$Trait, levels=rev(var2_flat[match(vars,var1)]))
+dfcor$Training <- factor(dfcor$Training,levels=c("Train 2021","Train 2022","Train 2023","Combined seasons"))
+dfcor$Testing <- factor(dfcor$Testing,levels=unique(dfcor$Testing))
+
+aggml_comb <- c("Raw data & PLSR","Raw data & SVR", 
+                "Plot averaged & PLSR","Plot averaged & SVR",
+                "Genotype averaged & PLSR","Genotype averaged & SVR" )
+
+dfcor$Aggregation <- factor(dfcor$Aggregation,levels = aggml_comb)
+
+paired_colors <- c(
+  "Raw data & PLSR" = "#A6CEE3",
+  "Raw data & SVR" = "#1F78B4", 
+  "Plot averaged & PLSR" = "#B2DF8A",
+  "Plot averaged & SVR" = "#33A02C",
+  "Genotype averaged & PLSR" = "#FB9A99",
+  "Genotype averaged & SVR" = "#E31A1C")
 
 
 
-ggplot(dfcor, aes(x=Trait,y=score,fill=datatype)) +
+ggplot(dfcor, aes(x=Trait,y=score,fill=Aggregation)) +
   geom_bar(stat = "identity", position = "dodge")+
   # theme_minimal() +
   # ggh4x::facet_grid2(Training ~ Testing, scales = "free", independent = "x")+
   facet_grid(Training ~ Testing, scales = "free")+
   labs(y="Squared Pearson Correlation",x="") +
-  geom_text(aes(label = round(score,2),y=score+0.01),size = 2.5, vjust=-0.25, position=position_dodge(width=0.9))+
-  theme(legend.position = "bottom",legend.text = element_text(size=13,face="plain"),legend.title=element_text(size=14,face="bold"),
-        text = element_text(size = 14,face="bold"),axis.text =  element_text(size = 10,face="bold"),axis.text.x  =  element_text(angle=30),
-        axis.title=element_text(size=13,face="bold"), strip.text = element_text(size=13,face="bold"),
-        strip.background = element_rect(fill = "gray90", color = "gray50")) +
-  scale_fill_manual(name = "Data aggregation",values=c("#F5D491","#7E88C1","#A62E38")) + #"#74C476","#FFB7C5","#2C7BB6"
-  coord_cartesian(ylim =c(0, 1)) 
+  geom_text(aes(label = round(score,2),y=score+0.01),size = 2.5, hjust=0.1, position=position_dodge(width=0.9))+
+  theme_minimal() +
+  theme(
+    plot.background = element_rect(fill = "white"),
+    legend.position = "bottom",
+        # legend.text = element_text(size=9,face="plain"),
+        # legend.title=element_text(size=10,face="bold"),
+        # text = element_text(size = 10,face="bold"),
+        # axis.text =  element_text(size = 10),
+        # axis.text.x  =  element_text(angle=30,hjust = 1),
+        # axis.title=element_text(size=11,face="bold"), 
+    strip.text = element_text(size=10,face="bold"),
+    strip.background = element_rect(fill = "white", color = "black", linewidth = 0.5)) +
+  scale_fill_manual(name="Aggregation & ML",values=paired_colors) + #"#74C476","#FFB7C5","#2C7BB6"
+  coord_flip(ylim =c(0, 1)) + guides(fill = guide_legend(nrow = 2))
 
-ggsave("Figures/MF5_PLSR_predicting_unseen_seasons_barplot.png",width = 12, height = 8)
+ggsave("Figures/MF5_predicting_unseen_seasons_barplot.png",width = 8, height = 10)

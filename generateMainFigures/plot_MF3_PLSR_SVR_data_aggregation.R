@@ -1,5 +1,4 @@
 
-
 rm(list = ls())
 
 list.of.packages <- c("pls","dplyr","plotrix","ggplot2","gridExtra","chemometrics","reshape2","ggpubr")
@@ -14,104 +13,113 @@ for (file in c("R_Burnett/","myR/")){
   invisible(sapply(myls,FUN=source))
 }
 
-vars<-c( "SLA","N","Vmax","a400","phiPSII_ind_res","maxNPQ") #
-
-# "SLA","N","CN","Vpmax","Vmax","gsw","a400","phiPSII_ind_res","maxNPQ","endFvFm","initialFvFm"
+# "C","d15N", "SL","iWUE","NPQ_ind_rate", "NPQ_ind_linear",, "NPQ_rel_res",  "endNPQ"
+vars<-c( "SLA","N", "CN", "d13C",  "Vpmax","Vmax", "a400", "gsw",  
+         "NPQ_ind_amp", "NPQ_rel_amp", "NPQ_rel_rate","maxNPQ", 
+         "phiPSII_ind_amp", "phiPSII_ind_rate", "phiPSII_ind_res", "endFvFm", "initialFvFm")
 
 year <- 2021
 segments0 <- 5
 nrep <- 20
-segment <- 3
 repl <- 10
+segment <- 3
+# load genotype-averaged data
+agg <- "sampledHSR"#
 
-agg <- "sampledHSR" #
+dts <- c("raw_data","plot_averaged","genotype_averaged")
+dtlabel <- c("Raw data","Plot averaged","Genotype averaged")
 
-dataset<-c("Calibration","Validation")
-datatype <- c("raw_data","plot_averaged","genotype_averaged")
-datalabel <- c("Raw data","Averaged per replicate","Averaged per genotype") #
 
 
 ini<-TRUE
-for (d in 1:length(datatype)){#
+
+for (d in 1:3){
+  datatype <- dts[d]
   for (inVar in vars){
-    load(paste0("results/comparePLSR_SVR/PLSR_repeatedCV_model_",datatype[d],"_",agg,year,"_o", segments0*nrep,"i",segment*repl,"_",inVar,".RData"))
-    # load(paste0("results/comparePLSR_SVR/tuned_SVR_model_",datatype[d],"_",agg,year,"_o", segments0*nrep,"_",inVar,".RData"))
-    # res.rcv.svr.tuned <- res.rcv.svr
-    load(paste0("results/comparePLSR_SVR/SVR_model_",datatype[d],"_",agg,year,"_o", segments0*nrep,"_",inVar,".RData"))
-    for (t in 1:2){
-      if (ini){
-        dfr2<-data.frame(score=apply(res.rcv.mse$R2[[t]], 2, mean),trait=inVar,data_split=dataset[t],Model="PLSR",datatype=datalabel[d])
-        dfrmse<-data.frame(score=apply(res.rcv.mse$RMSEP[[t]], 2, mean),trait=inVar,data_split=dataset[t],Model="PLSR",datatype=datalabel[d])
-        dfrmseper<-data.frame(score=apply(res.rcv.mse$RMSEPper[[t]], 2, mean),trait=inVar,data_split=dataset[t],Model="PLSR",datatype=datalabel[d])
-        dfnoc<-data.frame(NoC=apply(res.rcv.mse$bestnoc, 2, mean),trait=inVar,data_split=dataset[t],Model="PLSR",datatype=datalabel[d])
-        ini<-FALSE
-      }else{
-        dfr2<-rbind(dfr2,data.frame(score=apply(res.rcv.mse$R2[[t]], 2, mean),trait=inVar,data_split=dataset[t],Model="PLSR",datatype=datalabel[d]))
-        dfrmse<-rbind(dfrmse,data.frame(score=apply(res.rcv.mse$RMSEP[[t]], 2, mean),trait=inVar,data_split=dataset[t],Model="PLSR",datatype=datalabel[d]))
-        dfrmseper<-rbind(dfrmseper,data.frame(score=apply(res.rcv.mse$RMSEPper[[t]], 2, mean),trait=inVar,data_split=dataset[t],Model="PLSR",datatype=datalabel[d]))
-        dfnoc<-rbind(dfnoc,data.frame(NoC=apply(res.rcv.mse$bestnoc, 2, mean),trait=inVar,data_split=dataset[t],Model="PLSR",datatype=datalabel[d]))
-      }
-      
-      # dfr2<-rbind(dfr2,data.frame(score=apply(res.rcv.svr.tuned$R2[[t]], 2, mean),trait=inVar,data_split=dataset[t],Model="Tuned SVR",datatype=datalabel[d]))
-      # dfrmse<-rbind(dfrmse,data.frame(score=apply(res.rcv.svr.tuned$RMSEP[[t]], 2, mean),trait=inVar,data_split=dataset[t],Model="Tuned SVR",datatype=datalabel[d]))
-      # dfrmseper<-rbind(dfrmseper,data.frame(score=apply(res.rcv.svr.tuned$RMSEPper[[t]], 2, mean),trait=inVar,data_split=dataset[t],Model="Tuned SVR",datatype=datalabel[d]))
-      # dfnoc<-rbind(dfnoc,data.frame(NoC=apply(res.rcv.svr.tuned$bestnoc, 2, mean),trait=inVar,data_split=dataset[t],Model="Tuned SVR",datatype=datalabel[d]))
-      # 
-      dfr2<-rbind(dfr2,data.frame(score=apply(res.rcv.svr$R2[[t]], 2, mean),trait=inVar,data_split=dataset[t],Model="SVR",datatype=datalabel[d]))
-      dfrmse<-rbind(dfrmse,data.frame(score=apply(res.rcv.svr$RMSEP[[t]], 2, mean),trait=inVar,data_split=dataset[t],Model="SVR",datatype=datalabel[d]))
-      dfrmseper<-rbind(dfrmseper,data.frame(score=apply(res.rcv.svr$RMSEPper[[t]], 2, mean),trait=inVar,data_split=dataset[t],Model="SVR",datatype=datalabel[d]))
-      dfnoc<-rbind(dfnoc,data.frame(NoC=apply(res.rcv.svr$bestnoc, 2, mean),trait=inVar,data_split=dataset[t],Model="SVR",datatype=datalabel[d]))
-      
+    load(paste0("results/compareMSE_PRESS/repeatedCV_model_",datatype,"_",agg,year,"_o", segments0*nrep,"i",segment*repl,"_",inVar,".RData"))
+    
+    t <- 2
+    ML <- "PLSR"
+    if (ini){
+      dfr2<-data.frame(score=melt(res.singlecv.mse$R2[[t]])$value,trait=inVar,Aggregation=paste0(dtlabel[d]," & ", ML))
+
+      ini<-FALSE
+    }else{
+      dfr2<-rbind(dfr2,data.frame(score=melt(res.singlecv.mse$R2[[t]])$value,trait=inVar,Aggregation=paste0(dtlabel[d]," & ", ML)))
     }
+    
+    ML <- "SVR"
+    load(file= paste0("results/comparePLSR_SVR/SVR_model_",datatype,"_",agg,year,"_o", segments0*nrep,"_",inVar,".RData"))
+    dfr2<-rbind(dfr2,data.frame(score=melt(res.rcv.svr$R2[[t]])$value,trait=inVar,Aggregation=paste0(dtlabel[d]," & ", ML)))
+
   }
+  
 }
 
+df <- dfr2
 
+df$trait <- var2_flat[match(df$trait,var1)] # var1 and var2loaded by  myR/change_var_names.R
+df$trait <- factor(df$trait, levels=var2_flat[match(vars,var1)])
+df$Aggregation <- factor(df$Aggregation,levels = unique(df$Aggregation))
 
-stat_box_data <- function(y) {
-  return( 
-    data.frame(
-      y = max(y),  #may need to modify this depending on your data
-      label = paste(round(median(y),2), '\n')
-    )
-  )
-}
+df_sum <- df %>%
+  group_by(trait,Aggregation) %>%
+  summarise(median_R2 = median(score),.groups = "drop")
 
-dfr2$Trait_type <- varclass[match(dfr2$trait,var1)]
-dfr2$Trait_type <- factor(dfr2$Trait_type,levels=c("Structural & biochemical","Gas exchange","Chlorophyll fluorescence"))
-dfr2$trait <- var2[match(dfr2$trait,var1)] # var1 and var2loaded by  myR/change_var_names.R
-dfr2$trait <- factor(dfr2$trait, levels=var2[match(vars,var1)])
-dfr2$Model <- factor(dfr2$Model,levels=unique(dfr2$Model))
-dfr2$datatype <- factor(dfr2$datatype,levels=datalabel)
+df_sum$trait <- factor(df_sum$trait, levels=var2_flat[match(vars,var1)])
+df_sum$Aggregation <- factor(df_sum$Aggregation,levels = unique(df$Aggregation))
 
-ggplot(dfr2[dfr2$data_split=="Validation",], aes(x=trait, y=score,fill=datatype)) +
-  geom_boxplot()+
-  facet_grid(Model ~ Trait_type,scales="free")+ #, switch = "y"
-  labs(y="Coefficient of determination",x="") +
-  stat_summary(fun.data = stat_box_data,geom = "text", aes(group=datatype), size=4,position=position_dodge(0.9)) +
-  theme(legend.position = "bottom",legend.text = element_text(size=15,face="plain"),legend.title=element_text(size=16,face="bold"),
-        text = element_text(size = 14,face="bold"),axis.text =  element_text(size = 14,face="bold"),
-        axis.title=element_text(size=16,face="bold"), strip.text = element_text(size=15,face="bold"))+
-  scale_fill_manual(name = "Data aggregation",values=c("#F5D491","#7E88C1","#A62E38")) +
-  stat_compare_means(label = "p.signif",label.y = -0.4) +
-  coord_cartesian(ylim =c(-0.5, 1))
+df_max <- df_sum %>%
+  group_by(trait) %>%
+  filter(median_R2 == max(median_R2)) %>%
+  ungroup()
 
+df_max$trait <- factor(df_max$trait, levels=var2_flat[match(vars,var1)])
+df_max$Aggregation <- factor(df_max$Aggregation,levels = unique(df$Aggregation))
 
-ggsave("Figures/MF3_PLSR_SVR_aggregation.png",width = 10, height = 7)
+ggplot(data=df, aes(x=Aggregation, y=score , fill=Aggregation)) +
+  geom_violin()+
+  facet_wrap(.~trait,ncol=3) +
+  labs(x="",y="R\u00b2") +
+  theme_minimal() + 
+  theme(plot.background = element_rect(fill = "white"),
+        axis.text.x = element_blank(),
+        panel.grid.minor = element_blank(),
+        legend.position = "bottom",
+        strip.background = element_rect(fill = "white", color = "black", linewidth = 0.5),
+        strip.text = element_text(face = "bold")) +
+  coord_cartesian(ylim = c(-0.4,1)) +
+  geom_text(data = df_sum, 
+            aes(x = Aggregation, y = 0.85, label = round(median_R2, 2)),
+            vjust = -0.5, size = 3, inherit.aes = FALSE,show.legend = FALSE) +
+  geom_text(data = df_max,
+            aes(x = Aggregation, y = 0.85, label = round(median_R2, 2)),
+            vjust = -0.5,  fontface = "bold" ,size = 3, inherit.aes = FALSE,show.legend = FALSE) +
+  scale_fill_brewer(name="Aggregation & ML",palette = "Paired")
 
+ggsave("Figures/MF3_PLSR_SVR_aggregation_singleCV.png",width = 8, height = 10)
 
-# ggplot(dfr2[dfr2$data_split=="Validation",], aes(x=trait, y=score,fill=Model)) +
-#   geom_boxplot()+
-#   facet_grid(datatype ~ Trait_type,scales="free", switch = "y")+
-#   labs(y="Coefficient of determination",x="") +
-#   stat_summary(fun.data = stat_box_data,geom = "text", aes(group=Model), size=3,position=position_dodge(0.9)) +
-#   theme(legend.position = "bottom",legend.text = element_text(size=12,face="plain"),legend.title=element_text(size=14,face="bold"),
-#         text = element_text(size = 14,face="bold"),axis.text =  element_text(size = 12,face="bold"),
-#         axis.title=element_text(size=16,face="bold"), strip.text = element_text(size=16,face="bold"))+
-#   scale_fill_brewer(palette = "Dark2") +
-#   stat_compare_means(label = "p.signif",label.y.npc = "bottom") 
-# 
-# 
-# ggsave("Figures/MF3_PLSR_SVR_aggregation2.png",width = 13, height = 8)
+# ggplot(data=df, aes(x=Aggregation, y=score , fill=Aggregation)) +
+#   geom_violin()+
+#   facet_wrap(.~trait,ncol=3) +
+#   labs(x="",y="R\u00b2") +
+#   theme_minimal() + 
+#   theme(plot.background = element_rect(fill = "white"),
+#         axis.text.x = element_blank(),
+#         panel.grid.minor = element_blank(),
+#         legend.position = "bottom",
+#         strip.background = element_rect(fill = "white", color = "black", linewidth = 0.5),
+#         strip.text = element_text(face = "bold")) +
+#   coord_cartesian(ylim = c(-0.4,1)) +
+#   geom_text(data = df_sum, 
+#             aes(x = Aggregation, y = 0.85, label = round(median_R2, 2), 
+#                 color = Aggregation,group = Aggregation),
+#             vjust = -0.5, size = 3, inherit.aes = FALSE,show.legend = FALSE) +
+#   geom_text(data = df_max,
+#             aes(x = Aggregation, y = 0.85, label = round(median_R2, 2), 
+#                 color = Aggregation,group = Aggregation),
+#             vjust = -0.5,  fontface = "bold" ,size = 3, inherit.aes = FALSE,show.legend = FALSE) +
+#   scale_fill_brewer(name="Aggregation & ML",palette = "Paired") +
+#   scale_color_brewer(name="Aggregation & ML",palette = "Paired")
 
 

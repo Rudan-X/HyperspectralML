@@ -17,12 +17,15 @@ for (file in c("R_Burnett/","myR/")){
   invisible(sapply(myls,FUN=source))
 }
 
-vars <- c("C", "CN", "Vpmax", "Vpmax.Vmax", "Area", "d13C", "d15N", "SL", "gsw",  "iWUE", "A_sat", "gs_sat","ci_sat", "iWUE_sat",   "gs", "sl",  
-          "NPQ_ind_amp", "NPQ_ind_rate", "NPQ_rel_amp", "NPQ_rel_rate", "NPQ_rel_res",  "phiPSII_ind_amp",  "phiPSII_ind_rate", "NPQ_ind_linear",  
-          "endNPQ", "endFvFm",  "initialFvFm")
+# "C", "CN", "Vpmax", "Vpmax.Vmax", "Area", "d13C", "d15N", "SL", "gsw",  "iWUE", "A_sat", "gs_sat","ci_sat", "iWUE_sat",   "gs", "sl",
+# vars <- c("phiPSII_ind_res","maxNPQ", 
+#           "NPQ_ind_amp", "NPQ_ind_rate", "NPQ_rel_amp", "NPQ_rel_rate", "NPQ_rel_res",  "phiPSII_ind_amp",  "phiPSII_ind_rate", "NPQ_ind_linear",  
+#           "endNPQ", "endFvFm",  "initialFvFm")
+
+vars <- c("d13C")
 
 plsmethod<-"oscorespls"
-maxnoc<-25
+maxnoc<-40
 
 segments0 <- 5
 nrep <- 20
@@ -31,14 +34,13 @@ segment<-3
 
 agg <-"sampledHSR"
 
-for (year in c(2021,2022,2023)){
-  for (datatype in c("raw_data","plot_averaged")){ #"genotype_averaged"
+for (year in c(2023)){
+  for (datatype in c("plot_averaged")){ #"genotype_averaged","plot_averaged"
     for (inVar in vars){
       
       traitHSR <- read.csv(paste0("data/combined_data/traits_and_HSR",year,"_",datatype,".csv"))
       
-      filen <- paste0("results/compare_season/PLSR_repeatedCV_model_",datatype,"_",agg,year,"_o", segments0*nrep,"i",segment*repl,"_",inVar,".RData") 
-      if (inVar%in%colnames(traitHSR) & !file.exists(filen)){
+      if (inVar%in%colnames(traitHSR)){
         if (inVar=="N" | inVar=="CN"){
           Start.wave <- 1500
           End.wave <- 2400
@@ -62,6 +64,7 @@ for (year in c(2021,2022,2023)){
         temp <- matrix(0,segments0,nrep)
         temp2 <- matrix(0,nrow(traitHSR),segments0*nrep)
         res.rcv.mse <- list(R2 = templ, RMSEP = templ, RMSEPper = templ, bestnoc = temp, pred = temp2)
+        res.singlecv.mse <- list(R2 = templ, RMSEP = templ, RMSEPper = templ, bestnoc = temp, pred = temp2)
         
         folds <- list()
         for (r in 1:nrep){
@@ -85,24 +88,31 @@ for (year in c(2021,2022,2023)){
             end_time <- Sys.time()
             end_time - start_time
             
+            iloop.singlecv <- innerloop_repeatedCV(dataset=cal.data,formula=as.formula("y~Spectra"),maxComps =maxnoc,method=plsmethod,iterations=1,segments=segment)
+            nComps.singlemse<-selectNOC_MSE_original(MSEP = iloop.singlecv$MSEP, select_strat ="hastie",sdfact=0.5, segments = segment)
+            
             nComps.mse<-selectNOC_MSE(MSEP = iloop.rcv$MSEP, select_strat ="hastie",sdfact=0.5,repl = repl, segments = segment) 
             
             res.rcv.mse$bestnoc[f,r] <- nComps.mse$bestnoc
             noc.rcv.mse <- nComps.mse$bestnoc
             
+            noc.singlecv.mse <- nComps.singlemse$bestnoc
+            res.singlecv.mse$bestnoc[f,r] <- nComps.singlemse$bestnoc # not used
             
             model.mse <- plsr(as.formula("y~Spectra"),data=datasets[[1]], ncomp = noc.rcv.mse, method = plsmethod, scale = FALSE,validation = "none")
+            model.smse <- plsr(as.formula("y~Spectra"),data=cal.data, ncomp = noc.singlecv.mse,  method = plsmethod, scale = FALSE,validation = "none")
             
             for (t in 1:2){
               pred.mse<-predict(model.mse, newdata=datasets[[t]], ncomp = noc.rcv.mse)
+              pred.smse<-predict(model.smse, newdata=datasets[[t]], ncomp = noc.singlecv.mse)
               if (t==1){
                 
                 res.rcv.mse$pred[cal.ind,(r-1)*segments0+f] <- pred.mse
-                
+                res.singlecv.mse$pred[cal.ind,(r-1)*segments0+f] <- pred.smse
               }else{
                 
                 res.rcv.mse$pred[val.ind,(r-1)*segments0+f] <- pred.mse
-                
+                res.singlecv.mse$pred[val.ind,(r-1)*segments0+f] <- pred.smse
               }
               
               
@@ -113,13 +123,19 @@ for (year in c(2021,2022,2023)){
               val_data_range <- range(datasets[[t]]$y, na.rm = TRUE)
               res.rcv.mse$RMSEPper[[t]][f,r] <- (rmsep/(val_data_range[2]-val_data_range[1]))*100
               
+              sq_resid <- (pred.smse - datasets[[t]]$y)^2
+              res.singlecv.mse$R2[[t]][f,r] <- round(pls::R2(model.smse,newdata=datasets[[t]],intercept=F)[[1]][noc.singlecv.mse],2)
+              rmsep <- round(sqrt(mean(sq_resid)),2)
+              res.singlecv.mse$RMSEP[[t]][f,r] <- rmsep
+              val_data_range <- range(datasets[[t]]$y, na.rm = TRUE)
+              res.singlecv.mse$RMSEPper[[t]][f,r] <- (rmsep/(val_data_range[2]-val_data_range[1]))*100
             }
           }
         }
         
         res.rcv.mse$folds <- folds
         
-        save(res.rcv.mse, file=paste0("results/compare_season/PLSR_repeatedCV_model_",datatype,"_",agg,year,"_o", segments0*nrep,"i",segment*repl,"_",inVar,".RData"))
+        save(res.rcv.mse,res.singlecv.mse, file=paste0("results/compare_season/PLSR_repeatedCV_model_",datatype,"_",agg,year,"_o", segments0*nrep,"i",segment*repl,"_",inVar,".RData"))
       }
     }
   }

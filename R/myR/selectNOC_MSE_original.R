@@ -16,7 +16,12 @@ selectNOC_MSE_original <- function(MSEP, select_strat="hastie",sdfact=1,segments
   }else if (select_strat == "hastie") {
     ind <- which.min(MSEPm)
     fvec <- (MSEPm < (MSEPm[ind] + sdfact * MSEPsd[ind]))
-    optcomp <- min((1:ind)[fvec[1:ind]])
+    final_ind <- min((1:ind)[fvec[1:ind]])
+    if (final_ind==Inf){
+      optcomp <- ind
+    }else{
+      optcomp <- final_ind
+    }
   }else if (select_strat == "relchange") {
     ind <- which.min(MSEPm)
     MSEPsel <- MSEPm[1:ind]
